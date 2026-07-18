@@ -120,21 +120,18 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="form-event">경조사명 <span class="required">*</span></label>
-                                <div class="select-editable">
-                                    <select id="form-event-select">
-                                        <option value=""></option>
-                                        <option value="아들결혼">아들결혼</option>
-                                        <option value="딸결혼">딸결혼</option>
-                                        <option value="본인결혼">본인결혼</option>
-                                        <option value="부친상">부친상</option>
-                                        <option value="모친상">모친상</option>
-                                        <option value="빙부상">빙부상</option>
-                                        <option value="빙모상">빙모상</option>
-                                        <option value="돌잔치">돌잔치</option>
-                                        <option value="칠순잔치">칠순잔치</option>
-                                    </select>
-                                    <input type="text" id="form-event" name="경조사명" placeholder="경조사 직접 입력" required>
-                                </div>
+                                <input type="text" id="form-event" name="경조사명" list="event-options" placeholder="경조사 선택 또는 직접 입력" required>
+                                <datalist id="event-options">
+                                    <option value="아들결혼"></option>
+                                    <option value="딸결혼"></option>
+                                    <option value="본인결혼"></option>
+                                    <option value="부친상"></option>
+                                    <option value="모친상"></option>
+                                    <option value="빙부상"></option>
+                                    <option value="빙모상"></option>
+                                    <option value="돌잔치"></option>
+                                    <option value="칠순잔치"></option>
+                                </datalist>
                             </div>
 
                             <div class="form-group">
@@ -153,16 +150,13 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="form-who">대상 (누구)</label>
-                                <div class="select-editable">
-                                    <select id="form-who-select">
-                                        <option value=""></option>
-                                        <option value="김성인">김성인</option>
-                                        <option value="김영숙">김영숙</option>
-                                        <option value="김성인/김영숙">김성인/김영숙</option>
-                                    </select>
-                                    <input type="text" id="form-who" name="누구" placeholder="우리 쪽 관계자 이름" required>
-                                </div>
+                                <label for="form-who">대상 (누구) <span class="required">*</span></label>
+                                <input type="text" id="form-who" name="누구" list="who-options" placeholder="대상 선택 또는 직접 입력" required>
+                                <datalist id="who-options">
+                                    <option value="김성인"></option>
+                                    <option value="김영숙"></option>
+                                    <option value="김성인/김영숙"></option>
+                                </datalist>
                             </div>
                         </div>
 

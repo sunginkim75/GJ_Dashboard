@@ -570,56 +570,20 @@ textarea:focus {
     pointer-events: none;
 }
 
-/* Editable Select Container */
-.select-editable {
-    position: relative;
-    display: flex;
-    align-items: center;
-    height: 48px; /* 높이 지정 */
-    width: 100%;
+/* 모든 일반 드롭다운 옵션 태그의 다크모드 가독성 강제 적용 */
+select option {
+    background-color: #1e293b !important; /* 어두운 네이비 배경 */
+    color: #ffffff !important; /* 흰색 글자 */
 }
 
-.select-editable select {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: var(--bg-card);
-    color: transparent; /* 겹침 방지를 위해 select 겉에 보이는 텍스트는 투명화 */
-    border-radius: 12px;
-    margin: 0;
-    padding-left: 14px;
-    outline: none;
-    font-size: 15px;
+/* HTML5 datalist 입력창 우측 화살표를 다크모드에 맞게 선명하게 보정 */
+input::-webkit-calendar-picker-indicator {
+    filter: invert(1); /* 화살표 아이콘을 밝은 색으로 반전 */
+    opacity: 0.6;
     cursor: pointer;
 }
-
-/* 옵션 리스트 내부의 다크모드 전용 밝은 색상 지정 */
-.select-editable select option {
-    background-color: #1e293b; /* 어두운 네이비 배경 */
-    color: #ffffff; /* 흰색 글자 */
-}
-
-.select-editable input {
-    position: absolute;
-    top: 1px;
-    left: 1px;
-    width: calc(100% - 38px);
-    height: calc(100% - 2px);
-    border: none;
-    border-radius: 11px 0 0 11px;
-    padding-left: 14px;
-    background: var(--bg-card);
-    color: var(--text-light);
-    z-index: 1;
-    outline: none;
-    font-size: 15px;
-}
-
-.select-editable input:focus {
-    box-shadow: none;
+input::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
 }
 
 /* Form Action Button */

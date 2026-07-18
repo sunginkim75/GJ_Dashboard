@@ -20,11 +20,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         // 1.1 Render Version and Google Sheets Sync Time
         updateHeaderMeta(data.version, data.last_sync);
         
-        // 2. Setup Form Select Element Listeners
-        initSelectEditable("form-event-select", "form-event");
-        initSelectEditable("form-who-select", "form-who");
-        
-        // 3. Format Amount Input Real-time
+        // 2. Format Amount Input Real-time
         setupAmountInputFormatter("form-amount");
 
         // 4. Check user authentication session
@@ -46,26 +42,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// Select Option & Input field synchronization (Editable Select box)
-function initSelectEditable(selectId, inputId) {
-    const select = document.getElementById(selectId);
-    const input = document.getElementById(inputId);
-    
-    if (select && input) {
-        select.addEventListener("change", (e) => {
-            if (e.target.value) {
-                input.value = e.target.value;
-            } else {
-                input.value = "";
-            }
-        });
-        
-        // Input 변경 시 select 리셋
-        input.addEventListener("input", () => {
-            select.value = "";
-        });
-    }
-}
+
 
 // Format number with commas on input event
 function setupAmountInputFormatter(inputId) {
