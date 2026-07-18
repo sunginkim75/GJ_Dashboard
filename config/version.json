@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.1",
   "history": [
     {
       "version": "0.1.0",
@@ -10,6 +10,11 @@
       "version": "0.2.0",
       "date": "2026-07-18",
       "description": "구글 API 연동 테스트 완료, FastAPI 백엔드 구축 및 모바일 반응형 프론트엔드 웹 UI 개발 완료"
+    },
+    {
+      "version": "0.2.1",
+      "date": "2026-07-18",
+      "description": "Vercel 서버리스(Serverless) 환경에서의 읽기 전용 파일 시스템 호환성 패치 적용 (StaticFiles 마운트 우회)"
     }
   ]
 }

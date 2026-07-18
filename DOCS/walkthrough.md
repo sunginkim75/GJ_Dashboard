@@ -16,6 +16,10 @@
   - `vercel.json`: Vercel Serverless Functions 파이썬 백엔드 빌드 및 라우팅 설정 파일 작성 완료
   - `Debug/003.debug_test.py`: JWT 발급 및 서명 만료 검증 단독 테스트 통과
   - `.gitignore`: 보안 파일(`credentials.json`, `config.json`)의 GitHub 노출 방지 처리 완료
+  - **GitHub 연동 및 업로드 완료**: 로컬 저장소 빌드 후 원격 저장소(`https://github.com/sunginkim75/GJ_Dashboard`)로 전체 소스코드 Push 완료
+  - **버그 수정 (v0.2.1)**: Vercel의 Serverless 환경(읽기 전용 컨테이너)에서 FastAPI의 정적 파일 마운트 작업이 권한 충돌을 일으켜 발생하는 500 크래시 버그 수정 완료 (Vercel 환경일 경우 마운트 과정 우회 처리)
+
+
 
 
 

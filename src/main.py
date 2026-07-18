@@ -188,16 +188,21 @@ def add_event(event: EventAddRequest, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"스프레드시트 추가 실패: {res.get('error')}")
 
 # SPA 프론트엔드 정적 파일 서빙
-static_path = os.path.join(base_dir, "src", "static")
-if not os.path.exists(static_path):
-    os.makedirs(static_path)
+# Vercel 환경에서는 Vercel CDN 자체에서 정적 파일을 서빙하므로 로컬 마운트를 건너뜁니다.
+if not os.environ.get("VERCEL"):
+    static_path = os.path.join(base_dir, "src", "static")
+    if not os.path.exists(static_path):
+        try:
+            os.makedirs(static_path)
+        except Exception:
+            pass
+    if os.path.exists(static_path):
+        app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 @app.get("/")
 def read_index():
+    static_path = os.path.join(base_dir, "src", "static")
     index_file = os.path.join(static_path, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)
-    return {"message": "Frontend index.html is not created yet."}
-
-# 정적 파일 디렉토리 마운트
-app.mount("/static", StaticFiles(directory=static_path), name="static")
+    return {"message": "Server is running. Static files are served by CDN."}
