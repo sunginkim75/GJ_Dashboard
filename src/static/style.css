@@ -160,9 +160,16 @@ body {
     font-size: 22px;
 }
 
+.logo-text-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .header-logo h2 {
     font-size: 18px;
     font-weight: 600;
+    margin: 0;
 }
 
 .user-profile {
@@ -832,9 +839,24 @@ input::-webkit-calendar-picker-indicator:hover {
     letter-spacing: 0.5px;
 }
 
+@media (max-width: 600px) {
+    .logo-text-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .header-meta {
+        margin-left: 0;
+    }
+    .app-header {
+        padding: 12px 15px;
+    }
+}
+
 @media (max-width: 480px) {
     .header-meta {
         gap: 4px;
+        flex-wrap: wrap;
     }
     .version-badge, .sync-badge {
         padding: 1px 4px;
