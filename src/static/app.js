@@ -17,6 +17,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         const data = await res.json();
         googleClientId = data.google_client_id;
         
+        // 1.1 Render Version and Google Sheets Sync Time
+        updateHeaderMeta(data.version, data.last_sync);
+        
         // 2. Setup Form Select Element Listeners
         initSelectEditable("form-event-select", "form-event");
         initSelectEditable("form-who-select", "form-who");
@@ -447,6 +450,9 @@ function setupFormSubmission() {
             if (res.ok && data.success) {
                 showToast("경조사가 스프레드시트에 정상 기록되었습니다.", "success");
                 
+                // 최종 입력 날짜 실시간 리프레시
+                refreshHeaderMeta();
+                
                 // 폼 리셋
                 form.reset();
                 resetFormDefaultDate();
@@ -512,5 +518,29 @@ function showLoading(show) {
         loadingEl.classList.remove("hidden");
     } else {
         loadingEl.classList.add("hidden");
+    }
+}
+
+// Render Version and Sync Badges next to Title
+function updateHeaderMeta(version, lastSync) {
+    const metaEl = document.getElementById("header-meta");
+    if (metaEl) {
+        metaEl.innerHTML = `
+            <span class="version-badge">v${version}</span>
+            <span class="sync-badge">최종 입력: ${lastSync}</span>
+        `;
+    }
+}
+
+// Refresh synchronization status from backend config API
+async function refreshHeaderMeta() {
+    try {
+        const res = await fetch("/api/auth/config");
+        if (res.ok) {
+            const data = await res.json();
+            updateHeaderMeta(data.version, data.last_sync);
+        }
+    } catch (err) {
+        console.error("Failed to refresh header metadata", err);
     }
 }

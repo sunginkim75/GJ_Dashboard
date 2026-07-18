@@ -129,7 +129,25 @@ def get_current_user(authorization: Optional[str] = Header(None)):
 
 @app.get("/api/auth/config")
 def get_auth_config():
-    return {"google_client_id": GOOGLE_CLIENT_ID}
+    # config/version.json 파일에서 버전을 동적으로 가져옵니다.
+    version = "0.3.2" # 기본값 폴백
+    try:
+        version_path = os.path.join(base_dir, "config", "version.json")
+        if os.path.exists(version_path):
+            with open(version_path, "r", encoding="utf-8") as f:
+                ver_data = json.load(f)
+                version = ver_data.get("version", version)
+    except Exception:
+        pass
+
+    # 구글 시트의 최종 데이터 등록 날짜 조회
+    last_sync = sheets_client.get_last_update_date()
+
+    return {
+        "google_client_id": GOOGLE_CLIENT_ID,
+        "version": version,
+        "last_sync": last_sync
+    }
 
 @app.post("/api/auth/login")
 def login(req: LoginRequest):

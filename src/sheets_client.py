@@ -202,3 +202,17 @@ class SheetsClient:
         except Exception as e:
             print(f"[Error adding event] {e}")
             raise e
+
+    def get_last_update_date(self):
+        """DB 시트의 가장 마지막 행의 날짜 컬럼 값을 읽어옵니다."""
+        try:
+            self._connect()
+            records = self.db_sheet.get_all_records()
+            if not records:
+                return "데이터 없음"
+            clean_records = self._clean_records(records)
+            last_record = clean_records[-1]
+            return last_record.get("날짜", "알 수 없음")
+        except Exception as e:
+            print(f"[Error getting last update date] {e}")
+            return "알 수 없음"
