@@ -1,5 +1,5 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.4",
   "history": [
     {
       "version": "0.1.0",
@@ -20,6 +20,16 @@
       "version": "0.2.2",
       "date": "2026-07-18",
       "description": "Vercel 환경에서의 파이썬 모듈 임포트 경로 탐색 오류(ModuleNotFoundError) 해결을 위한 sys.path 폴백 패치 적용"
+    },
+    {
+      "version": "0.2.3",
+      "date": "2026-07-18",
+      "description": "구글 API 접속 지연 연동(Lazy Loading Connection) 적용을 통한 서버 구동 안정성 강화 패치 적용"
+    },
+    {
+      "version": "0.2.4",
+      "date": "2026-07-18",
+      "description": "서버 구동 시 발생 가능한 모든 정적 파일 마운트 예외를 안전하게 우회하도록 최종 예외 래퍼 적용"
     }
   ]
 }

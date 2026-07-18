@@ -200,16 +200,13 @@ def add_event(event: EventAddRequest, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"스프레드시트 추가 실패: {res.get('error')}")
 
 # SPA 프론트엔드 정적 파일 서빙
-# Vercel 환경에서는 Vercel CDN 자체에서 정적 파일을 서빙하므로 로컬 마운트를 건너뜁니다.
-if not os.environ.get("VERCEL"):
+# Vercel 등 읽기 전용 서버리스 환경에서의 파일 쓰기 권한 오류를 원천 차단하기 위해 전체 예외처리로 감쌉니다.
+try:
     static_path = os.path.join(base_dir, "src", "static")
-    if not os.path.exists(static_path):
-        try:
-            os.makedirs(static_path)
-        except Exception:
-            pass
-    if os.path.exists(static_path):
+    if not os.environ.get("VERCEL") and os.path.exists(static_path):
         app.mount("/static", StaticFiles(directory=static_path), name="static")
+except Exception as e:
+    print(f"[Warning] Static files mounting skipped/failed: {e}")
 
 @app.get("/")
 def read_index():

@@ -22,47 +22,68 @@ class SheetsClient:
             except Exception as e:
                 print(f"[Warning] Failed to load config.json: {e}")
                 
-        if not self.spreadsheet_id:
-            raise ValueError("Spreadsheet ID가 설정되지 않았습니다. (환경변수 SPREADSHEET_ID 또는 config.json 필요)")
-            
-        scopes = [
+        self.scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
         
-        # 2. 구글 크리덴셜 결정 (환경 변수 우선, 파일 차선)
+        # 연결 상태 정보
+        self.client = None
+        self.doc = None
+        self.db_sheet = None
+        self.allowed_users_sheet = None
+        self.is_connected = False
+
+    def _connect(self):
+        """필요할 때 실제로 구글 스프레드시트에 접속합니다 (지연 연결)."""
+        if self.is_connected:
+            return
+            
+        if not self.spreadsheet_id:
+            raise ValueError("Spreadsheet ID가 설정되지 않았습니다. (환경변수 SPREADSHEET_ID 또는 config.json 필요)")
+            
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cred_path = os.path.join(base_dir, "config", "credentials.json")
         google_creds_json = os.environ.get("GOOGLE_CREDENTIALS")
         
+        # 구글 크리덴셜 결정
         if google_creds_json:
-            # Vercel 환경 변수에 설정된 JSON 문자열 사용
             try:
                 cred_info = json.loads(google_creds_json)
-                creds = Credentials.from_service_account_info(cred_info, scopes=scopes)
-                print("[SheetsClient] Loaded credentials from environment variable GOOGLE_CREDENTIALS")
+                creds = Credentials.from_service_account_info(cred_info, scopes=self.scopes)
+                print("[SheetsClient] Lazy-connected using environment GOOGLE_CREDENTIALS")
             except Exception as e:
                 raise ValueError(f"GOOGLE_CREDENTIALS 환경 변수 파싱 실패: {e}")
         elif os.path.exists(cred_path):
-            # 로컬 파일 사용
-            creds = Credentials.from_service_account_file(cred_path, scopes=scopes)
-            print(f"[SheetsClient] Loaded credentials from file {cred_path}")
+            creds = Credentials.from_service_account_file(cred_path, scopes=self.scopes)
+            print(f"[SheetsClient] Lazy-connected using file {cred_path}")
         else:
-            raise ValueError("Google Credentials가 존재하지 않습니다. (config/credentials.json 파일 또는 GOOGLE_CREDENTIALS 환경변수 필요)")
+            raise ValueError("Google Credentials가 존재하지 않습니다. (credentials.json 파일 또는 GOOGLE_CREDENTIALS 환경변수 필요)")
             
-        self.client = gspread.authorize(creds)
-        self.doc = self.client.open_by_key(self.spreadsheet_id)
-        
-        # 첫 번째 시트 (경조사 DB)
-        self.db_sheet = self.doc.worksheets()[0]
-        
-        # AllowedUsers 시트 찾기
-        self.allowed_users_sheet = None
-        for ws in self.doc.worksheets():
-            if ws.title in ["AllowedUsers", "접근권한"]:
-                self.allowed_users_sheet = ws
-                break
+        try:
+            self.client = gspread.authorize(creds)
+            self.doc = self.client.open_by_key(self.spreadsheet_id)
+            self.db_sheet = self.doc.worksheets()[0]
+            
+            # AllowedUsers 시트 찾기
+            self.allowed_users_sheet = None
+            for ws in self.doc.worksheets():
+                if ws.title in ["AllowedUsers", "접근권한"]:
+                    self.allowed_users_sheet = ws
+                    break
+            self.is_connected = True
+        except Exception as e:
+            self.is_connected = False
+            raise RuntimeError(f"Google Sheets 접속 오류: {e}. 스프레드시트 공유 권한이나 ID를 확인해 주세요.")
                 
     def get_allowed_emails(self):
         """허가된 이메일 목록을 스프레드시트에서 조회합니다."""
+        try:
+            self._connect()
+        except Exception as e:
+            print(f"[Error connecting to Sheets] {e}")
+            return []
+            
         if not self.allowed_users_sheet:
             return []
         try:
@@ -79,6 +100,7 @@ class SheetsClient:
             
     def search_events(self, query: str):
         """이름을 기준으로 경조사 데이터를 검색합니다."""
+        self._connect() # 이 레벨에서는 접속 실패 시 예외를 전파하여 클라이언트에 500 에러를 반환
         try:
             records = self.db_sheet.get_all_records()
             query = query.strip().lower()
@@ -93,10 +115,11 @@ class SheetsClient:
             return results
         except Exception as e:
             print(f"[Error searching events] {e}")
-            return []
+            raise e
             
     def add_event(self, data: dict):
         """새로운 경조사 이벤트를 스프레드시트에 추가합니다."""
+        self._connect()
         try:
             records = self.db_sheet.get_all_records()
             last_num = 0
@@ -109,7 +132,6 @@ class SheetsClient:
             new_num = last_num + 1
             
             # 헤더 순서에 맞춰 값 리스트 작성
-            # 번호, 날짜, 이름, 경조사명, 회사, 누구, 입출금, 축의금, 참석, 입출금방법, Remark
             headers = ['번호', '날짜', '이름', '경조사명', '회사', '누구', '입출금', '축의금', '참석', '입출금방법', 'Remark']
             
             row_values = []
@@ -132,4 +154,4 @@ class SheetsClient:
             return {"success": True, "번호": new_num}
         except Exception as e:
             print(f"[Error adding event] {e}")
-            return {"success": False, "error": str(e)}
+            raise e
