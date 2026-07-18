@@ -587,12 +587,19 @@ textarea:focus {
     height: 100%;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: var(--bg-card);
-    color: var(--text-muted);
+    color: transparent; /* 겹침 방지를 위해 select 겉에 보이는 텍스트는 투명화 */
     border-radius: 12px;
     margin: 0;
     padding-left: 14px;
     outline: none;
     font-size: 15px;
+    cursor: pointer;
+}
+
+/* 옵션 리스트 내부의 다크모드 전용 밝은 색상 지정 */
+.select-editable select option {
+    background-color: #1e293b; /* 어두운 네이비 배경 */
+    color: #ffffff; /* 흰색 글자 */
 }
 
 .select-editable input {
