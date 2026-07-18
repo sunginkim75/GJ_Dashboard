@@ -60,6 +60,11 @@ class SheetsClient:
                 google_creds_json = google_creds_json.replace('\\\\', '\\').replace('\\', '\\\\')
                 
                 cred_info = json.loads(google_creds_json)
+                
+                # private_key 내부의 문자열 "\n"을 진짜 개행 문자(LF)로 다시 치환
+                if "private_key" in cred_info and isinstance(cred_info["private_key"], str):
+                    cred_info["private_key"] = cred_info["private_key"].replace("\\n", "\n")
+                
                 creds = Credentials.from_service_account_info(cred_info, scopes=self.scopes)
                 print("[SheetsClient] Lazy-connected using environment GOOGLE_CREDENTIALS")
             except Exception as e:
