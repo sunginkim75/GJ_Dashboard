@@ -61,9 +61,27 @@ class SheetsClient:
                 
                 cred_info = json.loads(google_creds_json)
                 
-                # private_key 내부의 문자열 "\n"을 진짜 개행 문자(LF)로 다시 치환
+                # private_key 내부의 모든 개행 깨짐 및 역슬래시 찌꺼기를 원천 소거하고 올바른 PEM 규격으로 재조립
                 if "private_key" in cred_info and isinstance(cred_info["private_key"], str):
-                    cred_info["private_key"] = cred_info["private_key"].replace("\\n", "\n")
+                    pk = cred_info["private_key"]
+                    header = "-----BEGIN PRIVATE KEY-----"
+                    footer = "-----END PRIVATE KEY-----"
+                    
+                    # 1. 헤더/푸터 제외한 순수 base64 본문 추출
+                    pure_b64 = pk
+                    if header in pk:
+                        pure_b64 = pure_b64.replace(header, "")
+                    if footer in pk:
+                        pure_b64 = pure_b64.replace(footer, "")
+                        
+                    # 2. 모든 줄바꿈 및 이스케이프 문자, 역슬래시(\) 소거
+                    pure_b64 = pure_b64.replace("\\r", "").replace("\\n", "").replace("\n", "").replace("\r", "")
+                    pure_b64 = pure_b64.replace("\\", "")
+                    pure_b64 = "".join(pure_b64.split()) # 공백 완벽 제거
+                    
+                    # 3. 64글자 단위로 자르고 개행을 넣어 정밀 재조립
+                    lines = [pure_b64[i:i+64] for i in range(0, len(pure_b64), 64)]
+                    cred_info["private_key"] = header + "\n" + "\n".join(lines) + "\n" + footer
                 
                 creds = Credentials.from_service_account_info(cred_info, scopes=self.scopes)
                 print("[SheetsClient] Lazy-connected using environment GOOGLE_CREDENTIALS")
