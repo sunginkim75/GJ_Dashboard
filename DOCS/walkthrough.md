@@ -18,6 +18,8 @@
   - `.gitignore`: 보안 파일(`credentials.json`, `config.json`)의 GitHub 노출 방지 처리 완료
   - **GitHub 연동 및 업로드 완료**: 로컬 저장소 빌드 후 원격 저장소(`https://github.com/sunginkim75/GJ_Dashboard`)로 전체 소스코드 Push 완료
   - **버그 수정 (v0.2.1)**: Vercel의 Serverless 환경(읽기 전용 컨테이너)에서 FastAPI의 정적 파일 마운트 작업이 권한 충돌을 일으켜 발생하는 500 크래시 버그 수정 완료 (Vercel 환경일 경우 마운트 과정 우회 처리)
+  - **버그 수정 (v0.2.2)**: Vercel 파이썬 런타임이 `src/main.py` 실행 시 모듈 로드 경로 불일치로 `ModuleNotFoundError: No module named 'src'` 에러를 내며 크래시되는 현상 수정 완료 (임포트 경로에 부모 및 현재 폴더 강제 매핑 및 폴백 예외처리 적용)
+
 
 
 

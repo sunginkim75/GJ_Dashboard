@@ -10,10 +10,22 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+import sys
+# 임포트 경로 보완 (Vercel 및 로컬 환경 호환)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
-from src.sheets_client import SheetsClient
+try:
+    from src.sheets_client import SheetsClient
+except ModuleNotFoundError:
+    from sheets_client import SheetsClient
 
 app = FastAPI(title="경조사 관리 API")
 
