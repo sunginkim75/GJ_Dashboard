@@ -1,5 +1,5 @@
 {
-  "version": "0.2.7",
+  "version": "0.2.8",
   "history": [
     {
       "version": "0.1.0",
@@ -45,6 +45,11 @@
       "version": "0.2.7",
       "date": "2026-07-18",
       "description": "Vercel 환경변수 GOOGLE_CREDENTIALS 복사 오류(뒷부분 쓰레기 문자 유입) 자동 정제 필터 알고리즘 구현 및 적용"
+    },
+    {
+      "version": "0.2.8",
+      "date": "2026-07-18",
+      "description": "Vercel 환경변수 복사본 내의 백슬래시 이스케이프 깨짐(Invalid escape) 현상을 원천 치료하는 역슬래시 이중 정규화 필터 적용"
     }
   ]
 }

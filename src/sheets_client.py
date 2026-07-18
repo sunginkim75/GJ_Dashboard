@@ -56,6 +56,9 @@ class SheetsClient:
                 if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
                     google_creds_json = google_creds_json[start_idx:end_idx+1]
                 
+                # 백슬래시 이스케이프 깨짐 해결을 위한 이중 백슬래시화 정규화
+                google_creds_json = google_creds_json.replace('\\\\', '\\').replace('\\', '\\\\')
+                
                 cred_info = json.loads(google_creds_json)
                 creds = Credentials.from_service_account_info(cred_info, scopes=self.scopes)
                 print("[SheetsClient] Lazy-connected using environment GOOGLE_CREDENTIALS")
