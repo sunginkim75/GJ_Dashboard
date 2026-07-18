@@ -75,6 +75,17 @@ class SheetsClient:
         except Exception as e:
             self.is_connected = False
             raise RuntimeError(f"Google Sheets 접속 오류: {e}. 스프레드시트 공유 권한이나 ID를 확인해 주세요.")
+
+    def _clean_records(self, records):
+        """딕셔너리 키에서 BOM(\ufeff) 및 좌우 공백을 제거하여 깨끗한 딕셔너리 리스트를 만듭니다."""
+        clean_list = []
+        for r in records:
+            clean_r = {}
+            for k, v in r.items():
+                clean_k = str(k).replace("\ufeff", "").strip()
+                clean_r[clean_k] = v
+            clean_list.append(clean_r)
+        return clean_list
                 
     def get_allowed_emails(self):
         """허가된 이메일 목록을 스프레드시트에서 조회합니다."""
@@ -88,8 +99,9 @@ class SheetsClient:
             return []
         try:
             records = self.allowed_users_sheet.get_all_records()
+            clean_records = self._clean_records(records)
             emails = []
-            for r in records:
+            for r in clean_records:
                 for k, v in r.items():
                     if k.lower() == "email" and v:
                         emails.append(str(v).strip().lower())
@@ -100,15 +112,16 @@ class SheetsClient:
             
     def search_events(self, query: str):
         """이름을 기준으로 경조사 데이터를 검색합니다."""
-        self._connect() # 이 레벨에서는 접속 실패 시 예외를 전파하여 클라이언트에 500 에러를 반환
+        self._connect()
         try:
             records = self.db_sheet.get_all_records()
+            clean_records = self._clean_records(records)
             query = query.strip().lower()
             if not query:
                 return []
                 
             results = []
-            for r in records:
+            for r in clean_records:
                 name = str(r.get("이름", "")).strip().lower()
                 if query in name:
                     results.append(r)
@@ -122,12 +135,13 @@ class SheetsClient:
         self._connect()
         try:
             records = self.db_sheet.get_all_records()
+            clean_records = self._clean_records(records)
             last_num = 0
-            if records:
+            if clean_records:
                 try:
-                    last_num = int(records[-1].get("번호", 0))
+                    last_num = int(clean_records[-1].get("번호", 0))
                 except ValueError:
-                    last_num = len(records)
+                    last_num = len(clean_records)
             
             new_num = last_num + 1
             
