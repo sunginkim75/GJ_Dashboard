@@ -1,0 +1,22 @@
+# Python virtual environment
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# IDE / Editor configuration
+.vscode/
+.idea/
+
+# Local sensitive configuration files (MUST NOT BE PUSHED TO GITHUB)
+config/credentials.json
+config/config.json
+
+# Debug and temporary folders
+Debug/
+logs/
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
