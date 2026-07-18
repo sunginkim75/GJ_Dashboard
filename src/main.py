@@ -44,17 +44,21 @@ config_path = os.path.join(base_dir, "config", "config.json")
 
 # 기본값 설정
 GOOGLE_CLIENT_ID = ""
-JWT_SECRET_KEY = os.environ.get("JWT_SECRET", "gj_dashboard_local_secret_key_1298471")
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET", "").strip()
 
 if os.path.exists(config_path):
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             config_data = json.load(f)
             GOOGLE_CLIENT_ID = config_data.get("google_client_id", "")
-            if not os.environ.get("JWT_SECRET"):
-                JWT_SECRET_KEY = config_data.get("jwt_secret", JWT_SECRET_KEY)
+            if not JWT_SECRET_KEY:
+                JWT_SECRET_KEY = config_data.get("jwt_secret", "")
     except Exception as e:
         print(f"[Warning] Failed to load config.json: {e}")
+
+# 만약 JWT_SECRET_KEY가 여전히 비어있다면 디폴트 안전한 키 지정 (HMAC key empty 에러 방지)
+if not JWT_SECRET_KEY:
+    JWT_SECRET_KEY = "gj_dashboard_local_default_secure_secret_key_1298471"
 
 # 환경 변수에 CLIENT_ID가 있다면 환경 변수 우선
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", GOOGLE_CLIENT_ID)
