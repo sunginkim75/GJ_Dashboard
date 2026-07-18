@@ -49,6 +49,13 @@ class SheetsClient:
         # 구글 크리덴셜 결정
         if google_creds_json:
             try:
+                # 괄호 기반 최외곽 도려내기 (BOM, 복사 쓰레기 텍스트 방어)
+                google_creds_json = google_creds_json.strip()
+                start_idx = google_creds_json.find('{')
+                end_idx = google_creds_json.rfind('}')
+                if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                    google_creds_json = google_creds_json[start_idx:end_idx+1]
+                
                 cred_info = json.loads(google_creds_json)
                 creds = Credentials.from_service_account_info(cred_info, scopes=self.scopes)
                 print("[SheetsClient] Lazy-connected using environment GOOGLE_CREDENTIALS")
