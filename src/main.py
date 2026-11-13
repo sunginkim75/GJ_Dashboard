@@ -208,8 +208,13 @@ def get_me(user: dict = Depends(get_current_user)):
     return {"success": True, "user": user}
 
 @app.get("/api/events/search")
-def search_events(query: str = "", user: dict = Depends(get_current_user)):
-    results = sheets_client.search_events(query)
+def search_events(
+    query: str = "",
+    field: str = "all",
+    show_all: bool = False,
+    user: dict = Depends(get_current_user)
+):
+    results = sheets_client.search_events(query=query, field=field, show_all=show_all)
     return {"success": True, "data": results}
 
 @app.post("/api/events/add")

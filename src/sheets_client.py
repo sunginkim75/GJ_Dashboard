@@ -143,21 +143,36 @@ class SheetsClient:
             print(f"[Error fetching allowed emails] {e}")
             return []
             
-    def search_events(self, query: str):
-        """이름을 기준으로 경조사 데이터를 검색합니다."""
+    def search_events(self, query: str = "", field: str = "all", show_all: bool = False):
+        """다중 조건(통합, 이름, 경조사명, 회사, 누구) 및 전체 보기로 경조사 데이터를 검색합니다."""
         self._connect()
         try:
             records = self.db_sheet.get_all_records()
             clean_records = self._clean_records(records)
+
+            if show_all:
+                return clean_records
+
             query = query.strip().lower()
             if not query:
                 return []
-                
+
+            target_fields_map = {
+                "all": ["이름", "경조사명", "회사", "누구"],
+                "이름": ["이름"],
+                "경조사명": ["경조사명"],
+                "회사": ["회사"],
+                "누구": ["누구"],
+            }
+            search_cols = target_fields_map.get(field, ["이름", "경조사명", "회사", "누구"])
+
             results = []
             for r in clean_records:
-                name = str(r.get("이름", "")).strip().lower()
-                if query in name:
-                    results.append(r)
+                for col in search_cols:
+                    val = str(r.get(col, "")).strip().lower()
+                    if query in val:
+                        results.append(r)
+                        break
             return results
         except Exception as e:
             print(f"[Error searching events] {e}")

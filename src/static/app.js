@@ -2,6 +2,7 @@
 let googleClientId = null;
 let sessionToken = localStorage.getItem("gj_session_token");
 let searchTimeout = null;
+let currentSearchField = "all";
 
 const loadingEl = document.getElementById("loading");
 const toastEl = document.getElementById("toast");
@@ -206,59 +207,100 @@ function setupTabs() {
 function setupSearch() {
     const searchInput = document.getElementById("search-input");
     const clearBtn = document.getElementById("btn-clear-search");
-    
+    const showAllBtn = document.getElementById("btn-show-all");
+    const fieldChips = document.querySelectorAll("#search-field-chips .filter-chip");
+
+    const placeholderMap = {
+        "all": "이름, 경조사명, 회사, 누구로 검색...",
+        "이름": "이름을 입력하여 검색...",
+        "경조사명": "경조사명(예: 아들결혼, 부친상)으로 검색...",
+        "회사": "소속/회사(예: 하이닉스, 키파운드리)로 검색...",
+        "누구": "대상(예: 김성인, 김영숙)으로 검색..."
+    };
+
+    fieldChips.forEach(chip => {
+        chip.addEventListener("click", () => {
+            fieldChips.forEach(c => c.classList.remove("active"));
+            chip.classList.add("active");
+            currentSearchField = chip.dataset.field || "all";
+            searchInput.placeholder = placeholderMap[currentSearchField] || placeholderMap["all"];
+
+            const query = searchInput.value.trim();
+            if (query) {
+                if (showAllBtn) showAllBtn.classList.remove("active");
+                performSearch(query, false);
+            }
+        });
+    });
+
+    if (showAllBtn) {
+        showAllBtn.addEventListener("click", () => {
+            searchInput.value = "";
+            clearBtn.classList.add("hidden");
+            showAllBtn.classList.add("active");
+            performSearch("", true);
+        });
+    }
+
     searchInput.addEventListener("input", (e) => {
         const query = e.target.value.trim();
-        
+        if (showAllBtn) showAllBtn.classList.remove("active");
+
         if (query) {
             clearBtn.classList.remove("hidden");
         } else {
             clearBtn.classList.add("hidden");
         }
-        
+
         // Debounce search (300ms)
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            performSearch(query);
+            performSearch(query, false);
         }, 300);
     });
-    
+
     clearBtn.addEventListener("click", () => {
         searchInput.value = "";
         clearBtn.classList.add("hidden");
-        performSearch("");
+        if (showAllBtn) showAllBtn.classList.remove("active");
+        performSearch("", false);
         searchInput.focus();
     });
 }
 
-async function performSearch(query) {
+async function performSearch(query, showAll = false) {
     const listEl = document.getElementById("results-list");
     const countEl = document.getElementById("results-count");
-    
-    if (!query) {
+
+    if (!query && !showAll) {
         listEl.innerHTML = `
             <div class="empty-state">
                 <div class="empty-icon">🔎</div>
-                <p>이름을 입력해 검색을 시작해 보세요.</p>
+                <p>검색어를 입력하거나 [전체보기]를 눌러 조회해 보세요.</p>
             </div>
         `;
         countEl.textContent = "0";
         return;
     }
-    
+
     try {
-        const res = await fetch(`/api/events/search?query=${encodeURIComponent(query)}`, {
+        const params = new URLSearchParams({
+            query: query || "",
+            field: currentSearchField || "all",
+            show_all: showAll ? "true" : "false"
+        });
+        const res = await fetch(`/api/events/search?${params.toString()}`, {
             headers: {
                 "Authorization": `Bearer ${sessionToken}`
             }
         });
-        
+
         if (res.status === 401) {
             // Expired session
             logout();
             return;
         }
-        
+
         const data = await res.json();
         if (data.success) {
             renderSearchResults(data.data);
