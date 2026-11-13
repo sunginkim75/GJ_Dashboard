@@ -143,41 +143,70 @@ class SheetsClient:
             print(f"[Error fetching allowed emails] {e}")
             return []
             
-    def search_events(self, query: str = "", field: str = "all", show_all: bool = False):
-        """다중 조건(통합, 이름, 경조사명, 회사, 누구) 및 전체 보기로 경조사 데이터를 검색합니다."""
+    def search_events(self, query: str = "", field: str = "all", show_all: bool = False, tx_type: str = "all"):
+        """다중 조건(통합, 이름, 경조사명, 회사, 누구), 전체 보기 및 입출금 구분(받음/보냄)으로 경조사 데이터를 검색합니다."""
         self._connect()
         try:
             records = self.db_sheet.get_all_records()
             clean_records = self._clean_records(records)
 
             if show_all:
-                return clean_records
+                results = clean_records
+            else:
+                query = query.strip().lower()
+                if not query:
+                    return []
 
-            query = query.strip().lower()
-            if not query:
-                return []
+                target_fields_map = {
+                    "all": ["이름", "경조사명", "회사", "누구"],
+                    "이름": ["이름"],
+                    "경조사명": ["경조사명"],
+                    "회사": ["회사"],
+                    "누구": ["누구"],
+                }
+                search_cols = target_fields_map.get(field, ["이름", "경조사명", "회사", "누구"])
 
-            target_fields_map = {
-                "all": ["이름", "경조사명", "회사", "누구"],
-                "이름": ["이름"],
-                "경조사명": ["경조사명"],
-                "회사": ["회사"],
-                "누구": ["누구"],
-            }
-            search_cols = target_fields_map.get(field, ["이름", "경조사명", "회사", "누구"])
+                results = []
+                for r in clean_records:
+                    for col in search_cols:
+                        val = str(r.get(col, "")).strip().lower()
+                        if query in val:
+                            results.append(r)
+                            break
 
-            results = []
-            for r in clean_records:
-                for col in search_cols:
-                    val = str(r.get(col, "")).strip().lower()
-                    if query in val:
-                        results.append(r)
-                        break
+            if tx_type in ["입금", "출금"]:
+                results = [r for r in results if str(r.get("입출금", "")).strip() == tx_type]
+
             return results
         except Exception as e:
             print(f"[Error searching events] {e}")
             raise e
-            
+
+    def _format_row_values(self, num_val, data: dict):
+        """헤더 순서에 맞춰 스프레드시트 행 리스트를 생성합니다."""
+        headers = ['번호', '날짜', '이름', '경조사명', '회사', '누구', '입출금', '축의금', '참석', '입출금방법', 'Remark', '답례여부', '답례금액']
+        row_values = []
+        for h in headers:
+            if h == "번호":
+                row_values.append(num_val)
+            else:
+                val = data.get(h, "")
+                if h in ["축의금", "답례금액"]:
+                    if isinstance(val, (int, float)):
+                        val = f"{int(val):,}" if val else ""
+                    elif isinstance(val, str):
+                        clean_str = val.replace(",", "").strip()
+                        if clean_str:
+                            try:
+                                clean_val = int(clean_str)
+                                val = f"{clean_val:,}" if clean_val > 0 else ("0" if h == "축의금" else "")
+                            except ValueError:
+                                pass
+                        else:
+                            val = ""
+                row_values.append(val)
+        return row_values
+
     def add_event(self, data: dict):
         """새로운 경조사 이벤트를 스프레드시트에 추가합니다."""
         self._connect()
@@ -190,32 +219,37 @@ class SheetsClient:
                     last_num = int(clean_records[-1].get("번호", 0))
                 except ValueError:
                     last_num = len(clean_records)
-            
+
             new_num = last_num + 1
-            
-            # 헤더 순서에 맞춰 값 리스트 작성
-            headers = ['번호', '날짜', '이름', '경조사명', '회사', '누구', '입출금', '축의금', '참석', '입출금방법', 'Remark']
-            
-            row_values = []
-            for h in headers:
-                if h == "번호":
-                    row_values.append(new_num)
-                else:
-                    val = data.get(h, "")
-                    if h == "축의금" and isinstance(val, (int, float)):
-                        val = f"{val:,}"
-                    elif h == "축의금" and isinstance(val, str):
-                        try:
-                            clean_val = int(val.replace(",", "").strip())
-                            val = f"{clean_val:,}"
-                        except ValueError:
-                            pass
-                    row_values.append(val)
-                    
+            row_values = self._format_row_values(new_num, data)
+
             self.db_sheet.append_row(row_values)
             return {"success": True, "번호": new_num}
         except Exception as e:
             print(f"[Error adding event] {e}")
+            raise e
+
+    def update_event(self, event_num: int, data: dict):
+        """기존 경조사 이벤트를 번호(번호 컬럼) 기준으로 찾아 수정합니다."""
+        self._connect()
+        try:
+            col_a = self.db_sheet.col_values(1)
+            target_row_idx = None
+            for idx, val in enumerate(col_a, start=1):
+                if idx == 1:
+                    continue
+                if str(val).strip() == str(event_num).strip():
+                    target_row_idx = idx
+                    break
+
+            if not target_row_idx:
+                raise ValueError(f"해당 번호({event_num})의 경조사 내역을 시트에서 찾을 수 없습니다.")
+
+            row_values = self._format_row_values(event_num, data)
+            self.db_sheet.update(range_name=f"A{target_row_idx}:M{target_row_idx}", values=[row_values])
+            return {"success": True, "번호": event_num}
+        except Exception as e:
+            print(f"[Error updating event] {e}")
             raise e
 
     def get_last_update_date(self):

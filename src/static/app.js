@@ -3,6 +3,9 @@ let googleClientId = null;
 let sessionToken = localStorage.getItem("gj_session_token");
 let searchTimeout = null;
 let currentSearchField = "all";
+let currentTxType = "all";
+let lastShowAll = false;
+let currentRenderedItems = [];
 
 const loadingEl = document.getElementById("loading");
 const toastEl = document.getElementById("toast");
@@ -23,6 +26,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         
         // 2. Format Amount Input Real-time
         setupAmountInputFormatter("form-amount");
+        setupAmountInputFormatter("form-return-amount");
+        setupAmountInputFormatter("edit-amount");
+        setupAmountInputFormatter("edit-return-amount");
 
         // 4. Check user authentication session
         if (sessionToken) {
@@ -164,7 +170,10 @@ function initDashboard() {
     
     // Form submission setup
     setupFormSubmission();
-    
+
+    // Edit modal setup
+    setupEditModal();
+
     // Logout button setup
     document.getElementById("btn-logout").addEventListener("click", logout);
 }
@@ -209,6 +218,7 @@ function setupSearch() {
     const clearBtn = document.getElementById("btn-clear-search");
     const showAllBtn = document.getElementById("btn-show-all");
     const fieldChips = document.querySelectorAll("#search-field-chips .filter-chip");
+    const txChips = document.querySelectorAll("#search-tx-chips .tx-chip");
 
     const placeholderMap = {
         "all": "이름, 경조사명, 회사, 누구로 검색...",
@@ -229,6 +239,19 @@ function setupSearch() {
             if (query) {
                 if (showAllBtn) showAllBtn.classList.remove("active");
                 performSearch(query, false);
+            }
+        });
+    });
+
+    txChips.forEach(chip => {
+        chip.addEventListener("click", () => {
+            txChips.forEach(c => c.classList.remove("active"));
+            chip.classList.add("active");
+            currentTxType = chip.dataset.tx || "all";
+
+            const query = searchInput.value.trim();
+            if (lastShowAll || query) {
+                performSearch(query, lastShowAll);
             }
         });
     });
@@ -268,9 +291,38 @@ function setupSearch() {
     });
 }
 
+function updateSummaryTotals(items) {
+    const totalEl = document.getElementById("summary-total");
+    const depositEl = document.getElementById("summary-deposit");
+    const withdrawEl = document.getElementById("summary-withdraw");
+
+    let totalAll = 0;
+    let totalDeposit = 0;
+    let totalWithdraw = 0;
+
+    if (items && items.length > 0) {
+        items.forEach(item => {
+            const raw = String(item.축의금 || "0").replace(/,/g, "").trim();
+            const num = parseInt(raw, 10);
+            const amt = isNaN(num) ? 0 : num;
+            totalAll += amt;
+            if (item.입출금 === "입금") {
+                totalDeposit += amt;
+            } else if (item.입출금 === "출금") {
+                totalWithdraw += amt;
+            }
+        });
+    }
+
+    if (totalEl) totalEl.textContent = `${totalAll.toLocaleString("ko-KR")}원`;
+    if (depositEl) depositEl.textContent = `${totalDeposit.toLocaleString("ko-KR")}원`;
+    if (withdrawEl) withdrawEl.textContent = `${totalWithdraw.toLocaleString("ko-KR")}원`;
+}
+
 async function performSearch(query, showAll = false) {
     const listEl = document.getElementById("results-list");
     const countEl = document.getElementById("results-count");
+    lastShowAll = showAll;
 
     if (!query && !showAll) {
         listEl.innerHTML = `
@@ -280,6 +332,7 @@ async function performSearch(query, showAll = false) {
             </div>
         `;
         countEl.textContent = "0";
+        updateSummaryTotals([]);
         return;
     }
 
@@ -287,7 +340,8 @@ async function performSearch(query, showAll = false) {
         const params = new URLSearchParams({
             query: query || "",
             field: currentSearchField || "all",
-            show_all: showAll ? "true" : "false"
+            show_all: showAll ? "true" : "false",
+            tx_type: currentTxType || "all"
         });
         const res = await fetch(`/api/events/search?${params.toString()}`, {
             headers: {
@@ -316,10 +370,12 @@ async function performSearch(query, showAll = false) {
 function renderSearchResults(items) {
     const listEl = document.getElementById("results-list");
     const countEl = document.getElementById("results-count");
-    
+
     countEl.textContent = items.length;
-    
+    updateSummaryTotals(items);
+
     if (!items || items.length === 0) {
+        currentRenderedItems = [];
         listEl.innerHTML = `
             <div class="empty-state">
                 <div class="empty-icon">😅</div>
@@ -328,22 +384,26 @@ function renderSearchResults(items) {
         `;
         return;
     }
-    
+
     // Sort desc (newest date first)
     const sorted = [...items].sort((a, b) => {
         const dateA = a.날짜 || "0000-00-00";
         const dateB = b.날짜 || "0000-00-00";
         return dateB.localeCompare(dateA);
     });
-    
-    listEl.innerHTML = sorted.map(item => {
+    currentRenderedItems = sorted;
+
+    listEl.innerHTML = sorted.map((item, idx) => {
         const isDeposit = item.입출금 === "입금";
         const typeClass = isDeposit ? "deposit" : "withdraw";
         const typeLabel = isDeposit ? "받음" : "보냄";
-        const amount = typeof item.축의금 === "number" ? item.축의금.toLocaleString("ko-KR") : item.축의금;
-        
+        const amount = typeof item.축의금 === "number" ? item.축의금.toLocaleString("ko-KR") : (item.축의금 || "0");
+        const returnStatus = item.답례여부 || "X";
+        const returnAmt = item.답례금액 ? (typeof item.답례금액 === "number" ? item.답례금액.toLocaleString("ko-KR") : item.답례금액) : "";
+        const returnDisplay = returnStatus === "O" ? (returnAmt ? `O (${returnAmt}원)` : "O") : (returnAmt ? `X (${returnAmt}원)` : "X");
+
         return `
-            <div class="event-card ${typeClass}">
+            <div class="event-card ${typeClass}" data-index="${idx}" title="클릭하여 내역 수정">
                 <div class="card-header">
                     <div class="card-title-group">
                         <span class="card-name">${item.이름 || '미기재'}</span>
@@ -366,8 +426,12 @@ function renderSearchResults(items) {
                             <span>${item.누구 || '-'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">방법:</span>
-                            <span>${item.입출금방법 || '-'}</span>
+                            <span class="detail-label">방법/참석:</span>
+                            <span>${item.입출금방법 || '-'} (${item.참석 || 'X'})</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">답례:</span>
+                            <span>${returnDisplay}</span>
                         </div>
                     </div>
                     <div class="card-amount-group">
@@ -383,6 +447,17 @@ function renderSearchResults(items) {
             </div>
         `;
     }).join("");
+
+    // 카드 클릭 시 수정 모달 열기
+    listEl.querySelectorAll(".event-card").forEach(cardEl => {
+        cardEl.addEventListener("click", () => {
+            const idx = parseInt(cardEl.getAttribute("data-index"), 10);
+            const targetItem = currentRenderedItems[idx];
+            if (targetItem) {
+                openEditModal(targetItem);
+            }
+        });
+    });
 }
 
 // Form Submission (Add Record)
@@ -390,13 +465,13 @@ function setupFormSubmission() {
     const form = document.getElementById("event-form");
     const toggleContainer = form.querySelector(".toggle-container");
     const toggleButtons = toggleContainer.querySelectorAll(".toggle-btn");
-    
+
     // 입출금 라디오 토글 이벤트 핸들러
     toggleButtons.forEach(btn => {
         btn.addEventListener("click", () => {
             toggleButtons.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            
+
             // 축의금 라벨 변경 등 스타일 동적 변경
             const type = btn.querySelector("input").value;
             const amountLabel = form.querySelector("label[for='form-amount']");
@@ -408,47 +483,49 @@ function setupFormSubmission() {
         });
     });
 
-    // 참석 라디오 토글 이벤트 핸들러
-    const attendContainer = form.querySelector(".toggle-container-simple");
-    const attendButtons = attendContainer.querySelectorAll(".toggle-btn");
-    attendButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            attendButtons.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
+    // 참석 및 답례여부 라디오 토글 이벤트 핸들러
+    form.querySelectorAll(".toggle-container-simple").forEach(container => {
+        const btns = container.querySelectorAll(".toggle-btn");
+        btns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                btns.forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+            });
         });
     });
-    
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        
+
         // 폼 유효성 체크
         const date = document.getElementById("form-date").value;
         const name = document.getElementById("form-name").value.trim();
         const event = document.getElementById("form-event").value.trim();
         const amountStr = document.getElementById("form-amount").value.trim();
         const who = document.getElementById("form-who").value.trim();
-        
+        const returnAmountStr = document.getElementById("form-return-amount").value.trim();
+
         if (!date || !name || !event || !amountStr || !who) {
             showToast("필수 항목(*)을 모두 입력해 주세요.", "error");
             return;
         }
-        
+
         // 전송 객체 구성
         const formData = new FormData(form);
         const submitData = {};
         formData.forEach((value, key) => {
             submitData[key] = value;
         });
-        
+
         // 이름, 경조사명, 누구 트림
         submitData["이름"] = name;
         submitData["경조사명"] = event;
         submitData["누구"] = who;
-        
+
         // 금액 콤마 제거 후 정수값으로
-        const cleanAmount = amountStr.replace(/,/g, "");
-        submitData["축의금"] = cleanAmount;
-        
+        submitData["축의금"] = amountStr.replace(/,/g, "");
+        submitData["답례금액"] = returnAmountStr.replace(/,/g, "");
+
         showLoading(true);
         try {
             const res = await fetch("/api/events/add", {
@@ -459,36 +536,39 @@ function setupFormSubmission() {
                 },
                 body: JSON.stringify(submitData)
             });
-            
+
             if (res.status === 401) {
                 logout();
                 return;
             }
-            
+
             const data = await res.json();
             if (res.ok && data.success) {
                 showToast("경조사가 스프레드시트에 정상 기록되었습니다.", "success");
-                
+
                 // 최종 입력 날짜 실시간 리프레시
                 refreshHeaderMeta();
-                
+
                 // 폼 리셋
                 form.reset();
                 resetFormDefaultDate();
-                
+
                 // 라디오 초기 상태로 복구
                 toggleButtons.forEach(b => b.classList.remove("active"));
                 toggleButtons[0].classList.add("active");
-                attendButtons.forEach(b => b.classList.remove("active"));
-                attendButtons[0].classList.add("active");
-                
+                form.querySelectorAll(".toggle-container-simple").forEach(container => {
+                    const btns = container.querySelectorAll(".toggle-btn");
+                    btns.forEach(b => b.classList.remove("active"));
+                    if (btns[0]) btns[0].classList.add("active");
+                });
+
                 // 조회 탭으로 강제 이동
                 document.querySelector("[data-tab='search']").click();
-                
+
                 // 방금 등록한 이름으로 즉시 조회 수행
                 document.getElementById("search-input").value = name;
                 document.getElementById("btn-clear-search").classList.remove("hidden");
-                performSearch(name);
+                performSearch(name, false);
             } else {
                 showToast(data.detail || "경조사 등록 실패", "error");
             }
@@ -499,6 +579,158 @@ function setupFormSubmission() {
             showLoading(false);
         }
     });
+}
+
+// Edit Modal Setup & Handlers
+function setupEditModal() {
+    const modal = document.getElementById("edit-modal");
+    const closeBtn = document.getElementById("btn-close-modal");
+    const cancelBtn = document.getElementById("btn-cancel-edit");
+    const editForm = document.getElementById("edit-form");
+
+    if (!modal || !editForm) return;
+
+    const closeModal = () => modal.classList.add("hidden");
+    closeBtn.addEventListener("click", closeModal);
+    cancelBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // 토글 버튼 클릭 동기화
+    ["edit-tx-toggle", "edit-attend-toggle", "edit-return-toggle"].forEach(containerId => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const btns = container.querySelectorAll(".toggle-btn");
+        btns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                btns.forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                const radio = btn.querySelector("input[type='radio']");
+                if (radio) radio.checked = true;
+            });
+        });
+    });
+
+    editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const numVal = parseInt(document.getElementById("edit-num").value, 10);
+        const date = document.getElementById("edit-date").value;
+        const name = document.getElementById("edit-name").value.trim();
+        const event = document.getElementById("edit-event").value.trim();
+        const amountStr = document.getElementById("edit-amount").value.trim();
+        const company = document.getElementById("edit-company").value.trim();
+        const who = document.getElementById("edit-who").value.trim();
+        const method = document.getElementById("edit-method").value;
+        const returnAmountStr = document.getElementById("edit-return-amount").value.trim();
+        const remark = document.getElementById("edit-remark").value.trim();
+
+        const txRadio = editForm.querySelector("input[name='edit_입출금']:checked");
+        const attendRadio = editForm.querySelector("input[name='edit_참석']:checked");
+        const returnRadio = editForm.querySelector("input[name='edit_답례여부']:checked");
+
+        if (!numVal || !date || !name || !event || !amountStr || !who) {
+            showToast("필수 항목(*)을 모두 입력해 주세요.", "error");
+            return;
+        }
+
+        const payload = {
+            "번호": numVal,
+            "날짜": date,
+            "이름": name,
+            "경조사명": event,
+            "회사": company,
+            "누구": who,
+            "입출금": txRadio ? txRadio.value : "입금",
+            "축의금": amountStr.replace(/,/g, ""),
+            "참석": attendRadio ? attendRadio.value : "X",
+            "입출금방법": method,
+            "답례여부": returnRadio ? returnRadio.value : "X",
+            "답례금액": returnAmountStr.replace(/,/g, ""),
+            "Remark": remark
+        };
+
+        showLoading(true);
+        try {
+            const res = await fetch("/api/events/update", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${sessionToken}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.status === 401) {
+                logout();
+                return;
+            }
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast(`#${numVal}번 경조사 내역이 수정되었습니다.`, "success");
+                closeModal();
+                refreshHeaderMeta();
+                const currentQuery = document.getElementById("search-input").value.trim();
+                performSearch(currentQuery, lastShowAll);
+            } else {
+                showToast(data.detail || "경조사 수정 실패", "error");
+            }
+        } catch (err) {
+            showToast("네트워크 통신 오류", "error");
+            console.error(err);
+        } finally {
+            showLoading(false);
+        }
+    });
+}
+
+function setToggleGroupValue(containerId, radioName, targetVal) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const labels = container.querySelectorAll(".toggle-btn");
+    labels.forEach(label => {
+        const input = label.querySelector(`input[name='${radioName}']`);
+        if (input && input.value === targetVal) {
+            input.checked = true;
+            label.classList.add("active");
+        } else if (input) {
+            input.checked = false;
+            label.classList.remove("active");
+        }
+    });
+}
+
+function openEditModal(item) {
+    const modal = document.getElementById("edit-modal");
+    if (!modal) return;
+
+    document.getElementById("edit-num").value = item.번호 || "";
+    document.getElementById("edit-num-badge").textContent = item.번호 ? `#${item.번호}` : "";
+    document.getElementById("edit-date").value = item.날짜 || "";
+    document.getElementById("edit-name").value = item.이름 || "";
+    document.getElementById("edit-event").value = item.경조사명 || "";
+
+    const rawAmt = String(item.축의금 ?? "").replace(/,/g, "").trim();
+    document.getElementById("edit-amount").value = rawAmt ? Number(rawAmt).toLocaleString("ko-KR") : "";
+
+    document.getElementById("edit-company").value = item.회사 || "";
+    document.getElementById("edit-who").value = item.누구 || "";
+    document.getElementById("edit-method").value = item.입출금방법 || "통장입금";
+
+    const rawRetAmt = String(item.답례금액 ?? "").replace(/,/g, "").trim();
+    document.getElementById("edit-return-amount").value = rawRetAmt && !isNaN(Number(rawRetAmt)) && Number(rawRetAmt) > 0
+        ? Number(rawRetAmt).toLocaleString("ko-KR")
+        : (rawRetAmt || "");
+
+    document.getElementById("edit-remark").value = item.Remark || "";
+
+    setToggleGroupValue("edit-tx-toggle", "edit_입출금", item.입출금 === "출금" ? "출금" : "입금");
+    setToggleGroupValue("edit-attend-toggle", "edit_참석", item.참석 === "O" ? "O" : "X");
+    setToggleGroupValue("edit-return-toggle", "edit_답례여부", item.답례여부 === "O" ? "O" : "X");
+
+    modal.classList.remove("hidden");
 }
 
 // User Logout

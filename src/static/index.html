@@ -84,6 +84,12 @@
                         </div>
                         <button type="button" id="btn-show-all" class="btn-show-all">📋 전체보기</button>
                     </div>
+                    <div class="search-tx-row" id="search-tx-chips">
+                        <span class="tx-filter-label">입출금 구분:</span>
+                        <button type="button" class="tx-chip active" data-tx="all">전체</button>
+                        <button type="button" class="tx-chip deposit" data-tx="입금">받음 (입금)</button>
+                        <button type="button" class="tx-chip withdraw" data-tx="출금">보냄 (출금)</button>
+                    </div>
                     <div class="search-input-wrapper">
                         <span class="search-icon">🔍</span>
                         <input type="text" id="search-input" placeholder="이름, 경조사명, 회사, 누구로 검색..." autocomplete="off">
@@ -91,8 +97,16 @@
                     </div>
                 </div>
 
-                <div class="results-meta">
-                    <span>검색 결과: <strong id="results-count">0</strong>건</span>
+                <div class="results-meta-box glass">
+                    <div class="results-meta-top">
+                        <span>조회 건수: <strong id="results-count">0</strong>건</span>
+                        <span class="edit-hint">💡 카드를 누르면 수정할 수 있습니다</span>
+                    </div>
+                    <div class="results-summary-row" id="results-summary">
+                        <div class="summary-pill total">총 금액: <strong id="summary-total">0원</strong></div>
+                        <div class="summary-pill deposit">받음 합계: <strong id="summary-deposit">0원</strong></div>
+                        <div class="summary-pill withdraw">보냄 합계: <strong id="summary-withdraw">0원</strong></div>
+                    </div>
                 </div>
 
                 <!-- 검색 결과 리스트 -->
@@ -203,6 +217,30 @@
                             </div>
                         </div>
 
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>답례 여부</label>
+                                <div class="toggle-container-simple" id="add-return-toggle">
+                                    <label class="toggle-btn active">
+                                        <input type="radio" name="답례여부" value="X" checked>
+                                        <span>미답례 (X)</span>
+                                    </label>
+                                    <label class="toggle-btn">
+                                        <input type="radio" name="답례여부" value="O">
+                                        <span>답례 (O)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="form-return-amount">답례 금액</label>
+                                <div class="price-input-wrapper">
+                                    <input type="text" id="form-return-amount" name="답례금액" placeholder="0" inputmode="numeric">
+                                    <span class="currency-unit">원</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="form-remark">비고 (Remark)</label>
                             <textarea id="form-remark" name="Remark" placeholder="가족명 또는 상세 비고사항 기재..." rows="2"></textarea>
@@ -213,6 +251,126 @@
                 </div>
             </section>
         </main>
+
+        <!-- 경조사 수정 모달 -->
+        <div id="edit-modal" class="modal-overlay hidden">
+            <div class="modal-card glass">
+                <div class="modal-header">
+                    <h3>✏️ 경조사 내역 수정 <span id="edit-num-badge" class="version-badge"></span></h3>
+                    <button type="button" id="btn-close-modal" class="btn-close-modal">&times;</button>
+                </div>
+                <form id="edit-form" novalidate>
+                    <input type="hidden" id="edit-num" name="번호">
+                    <div class="form-group row-toggle">
+                        <label>구분</label>
+                        <div class="toggle-container" id="edit-tx-toggle">
+                            <label class="toggle-btn active">
+                                <input type="radio" name="edit_입출금" value="입금" checked>
+                                <span>받음 (입금)</span>
+                            </label>
+                            <label class="toggle-btn">
+                                <input type="radio" name="edit_입출금" value="출금">
+                                <span>보냄 (출금)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="edit-date">날짜 <span class="required">*</span></label>
+                            <input type="date" id="edit-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-name">이름 <span class="required">*</span></label>
+                            <input type="text" id="edit-name" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="edit-event">경조사명 <span class="required">*</span></label>
+                            <input type="text" id="edit-event" list="event-options" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-amount">금액 <span class="required">*</span></label>
+                            <div class="price-input-wrapper">
+                                <input type="text" id="edit-amount" required inputmode="numeric">
+                                <span class="currency-unit">원</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="edit-company">소속 / 회사</label>
+                            <input type="text" id="edit-company">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-who">대상 (누구) <span class="required">*</span></label>
+                            <input type="text" id="edit-who" list="who-options" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>참석 여부</label>
+                            <div class="toggle-container-simple" id="edit-attend-toggle">
+                                <label class="toggle-btn active">
+                                    <input type="radio" name="edit_참석" value="X" checked>
+                                    <span>미참석 (X)</span>
+                                </label>
+                                <label class="toggle-btn">
+                                    <input type="radio" name="edit_참석" value="O">
+                                    <span>참석 (O)</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-method">입출금 방법</label>
+                            <select id="edit-method">
+                                <option value="통장입금">통장입금</option>
+                                <option value="봉투">봉투</option>
+                                <option value="직접전달">직접전달</option>
+                                <option value="기타">기타</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>답례 여부</label>
+                            <div class="toggle-container-simple" id="edit-return-toggle">
+                                <label class="toggle-btn active">
+                                    <input type="radio" name="edit_답례여부" value="X" checked>
+                                    <span>미답례 (X)</span>
+                                </label>
+                                <label class="toggle-btn">
+                                    <input type="radio" name="edit_답례여부" value="O">
+                                    <span>답례 (O)</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-return-amount">답례 금액</label>
+                            <div class="price-input-wrapper">
+                                <input type="text" id="edit-return-amount" placeholder="0" inputmode="numeric">
+                                <span class="currency-unit">원</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-remark">비고 (Remark)</label>
+                        <textarea id="edit-remark" rows="2"></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" id="btn-cancel-edit" class="btn-cancel">취소</button>
+                        <button type="submit" class="btn-submit">💾 수정 저장하기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- 하단 네비게이션 바 -->
         <nav class="app-nav glass">

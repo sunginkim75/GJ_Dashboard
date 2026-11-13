@@ -80,6 +80,11 @@ class EventAddRequest(BaseModel):
     참석: str
     입출금방법: str
     Remark: Optional[str] = ""
+    답례여부: Optional[str] = "X"
+    답례금액: Optional[str] = ""
+
+class EventUpdateRequest(EventAddRequest):
+    번호: int
 
 # JWT 토큰 생성 함수
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -212,9 +217,10 @@ def search_events(
     query: str = "",
     field: str = "all",
     show_all: bool = False,
+    tx_type: str = "all",
     user: dict = Depends(get_current_user)
 ):
-    results = sheets_client.search_events(query=query, field=field, show_all=show_all)
+    results = sheets_client.search_events(query=query, field=field, show_all=show_all, tx_type=tx_type)
     return {"success": True, "data": results}
 
 @app.post("/api/events/add")
@@ -225,6 +231,21 @@ def add_event(event: EventAddRequest, user: dict = Depends(get_current_user)):
         return {"success": True, "번호": res.get("번호")}
     else:
         raise HTTPException(status_code=500, detail=f"스프레드시트 추가 실패: {res.get('error')}")
+
+@app.put("/api/events/update")
+def update_event(event: EventUpdateRequest, user: dict = Depends(get_current_user)):
+    try:
+        event_dict = event.dict()
+        event_num = event_dict.pop("번호")
+        res = sheets_client.update_event(event_num, event_dict)
+        if res.get("success"):
+            return {"success": True, "번호": res.get("번호")}
+        else:
+            raise HTTPException(status_code=500, detail=f"스프레드시트 수정 실패: {res.get('error')}")
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"서버 오류: {str(e)}")
 
 # SPA 프론트엔드 정적 파일 서빙
 # Vercel 등 읽기 전용 서버리스 환경에서의 파일 쓰기 권한 오류를 원천 차단하기 위해 전체 예외처리로 감쌉니다.
