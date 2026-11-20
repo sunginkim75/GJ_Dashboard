@@ -73,8 +73,20 @@
         <main class="app-content">
             <!-- 탭 1: 경조사 조회 -->
             <section id="tab-search" class="tab-panel active">
-                <div class="search-bar-container">
-                    <div class="search-filter-row">
+                <div class="search-control-panel glass">
+                    <!-- 1단: 검색어 입력창 + 전체보기 버튼 -->
+                    <div class="search-top-row">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="search-input" placeholder="이름, 경조사명, 회사, 누구로 검색..." autocomplete="off">
+                            <button id="btn-clear-search" class="btn-clear hidden">&times;</button>
+                        </div>
+                        <button type="button" id="btn-show-all" class="btn-show-all">📋 전체보기</button>
+                    </div>
+
+                    <!-- 2단: 검색 항목 선택 (5열 균등 그리드) -->
+                    <div class="filter-group-row">
+                        <span class="filter-row-label">검색항목</span>
                         <div class="search-field-chips" id="search-field-chips">
                             <button type="button" class="filter-chip active" data-field="all">통합</button>
                             <button type="button" class="filter-chip" data-field="이름">이름</button>
@@ -82,30 +94,38 @@
                             <button type="button" class="filter-chip" data-field="회사">회사</button>
                             <button type="button" class="filter-chip" data-field="누구">누구</button>
                         </div>
-                        <button type="button" id="btn-show-all" class="btn-show-all">📋 전체보기</button>
                     </div>
-                    <div class="search-tx-row" id="search-tx-chips">
-                        <span class="tx-filter-label">입출금 구분:</span>
-                        <button type="button" class="tx-chip active" data-tx="all">전체</button>
-                        <button type="button" class="tx-chip deposit" data-tx="입금">받음 (입금)</button>
-                        <button type="button" class="tx-chip withdraw" data-tx="출금">보냄 (출금)</button>
-                    </div>
-                    <div class="search-input-wrapper">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="search-input" placeholder="이름, 경조사명, 회사, 누구로 검색..." autocomplete="off">
-                        <button id="btn-clear-search" class="btn-clear hidden">&times;</button>
+
+                    <!-- 3단: 입출금 구분 선택 (3열 균등 그리드) -->
+                    <div class="filter-group-row">
+                        <span class="filter-row-label">입출구분</span>
+                        <div class="search-tx-chips" id="search-tx-chips">
+                            <button type="button" class="tx-chip active" data-tx="all">전체</button>
+                            <button type="button" class="tx-chip deposit" data-tx="입금">받음 (입금)</button>
+                            <button type="button" class="tx-chip withdraw" data-tx="출금">보냄 (출금)</button>
+                        </div>
                     </div>
                 </div>
 
+                <!-- 조회 요약 및 합계 패널 (3열 균등 그리드) -->
                 <div class="results-meta-box glass">
                     <div class="results-meta-top">
-                        <span>조회 건수: <strong id="results-count">0</strong>건</span>
-                        <span class="edit-hint">💡 카드를 누르면 수정할 수 있습니다</span>
+                        <span class="results-count-badge">조회 결과 <strong id="results-count">0</strong>건</span>
+                        <span class="edit-hint">💡 카드를 클릭하면 수정됩니다</span>
                     </div>
-                    <div class="results-summary-row" id="results-summary">
-                        <div class="summary-pill total">총 금액: <strong id="summary-total">0원</strong></div>
-                        <div class="summary-pill deposit">받음 합계: <strong id="summary-deposit">0원</strong></div>
-                        <div class="summary-pill withdraw">보냄 합계: <strong id="summary-withdraw">0원</strong></div>
+                    <div class="results-summary-grid" id="results-summary">
+                        <div class="summary-card total">
+                            <span class="summary-label">총 금액</span>
+                            <strong id="summary-total" class="summary-value">0원</strong>
+                        </div>
+                        <div class="summary-card deposit">
+                            <span class="summary-label">받음 합계</span>
+                            <strong id="summary-deposit" class="summary-value">0원</strong>
+                        </div>
+                        <div class="summary-card withdraw">
+                            <span class="summary-label">보냄 합계</span>
+                            <strong id="summary-withdraw" class="summary-value">0원</strong>
+                        </div>
                     </div>
                 </div>
 

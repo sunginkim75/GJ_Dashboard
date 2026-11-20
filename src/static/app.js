@@ -398,9 +398,16 @@ function renderSearchResults(items) {
         const typeClass = isDeposit ? "deposit" : "withdraw";
         const typeLabel = isDeposit ? "받음" : "보냄";
         const amount = typeof item.축의금 === "number" ? item.축의금.toLocaleString("ko-KR") : (item.축의금 || "0");
-        const returnStatus = item.답례여부 || "X";
-        const returnAmt = item.답례금액 ? (typeof item.답례금액 === "number" ? item.답례금액.toLocaleString("ko-KR") : item.답례금액) : "";
-        const returnDisplay = returnStatus === "O" ? (returnAmt ? `O (${returnAmt}원)` : "O") : (returnAmt ? `X (${returnAmt}원)` : "X");
+        const returnStatus = String(item.답례여부 || "X").trim().toUpperCase() === "O" ? "O" : "X";
+        const rawReturnAmt = item.답례금액 ? String(item.답례금액).replace(/,/g, "").trim() : "";
+        const formattedReturnAmt = rawReturnAmt && !isNaN(Number(rawReturnAmt)) && Number(rawReturnAmt) > 0
+            ? `${Number(rawReturnAmt).toLocaleString("ko-KR")}원`
+            : "";
+        const returnBadgeClass = returnStatus === "O" ? "status-yes" : "status-no";
+        const returnDisplay = returnStatus === "O"
+            ? (formattedReturnAmt ? `완료 (${formattedReturnAmt})` : "완료 (O)")
+            : (formattedReturnAmt ? `미답례 (${formattedReturnAmt})` : "미답례 (X)");
+        const attendStatus = String(item.참석 || "X").trim().toUpperCase() === "O" ? "참석 (O)" : "미참석 (X)";
 
         return `
             <div class="event-card ${typeClass}" data-index="${idx}" title="클릭하여 내역 수정">
@@ -408,35 +415,39 @@ function renderSearchResults(items) {
                     <div class="card-title-group">
                         <span class="card-name">${item.이름 || '미기재'}</span>
                         <span class="card-tag">${typeLabel}</span>
+                        ${item.번호 ? `<span class="card-num">#${item.번호}</span>` : ''}
                     </div>
-                    <span class="card-date">${item.날짜 || '날짜미상'}</span>
+                    <div class="card-header-right">
+                        <span class="card-date">${item.날짜 || '날짜미상'}</span>
+                        <div class="card-amount">${amount}원</div>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="card-details">
+                    <div class="card-details-grid">
                         <div class="detail-item">
-                            <span class="detail-label">경조사:</span>
-                            <span>${item.경조사명 || '미기재'}</span>
+                            <span class="detail-label">경조사</span>
+                            <span class="detail-value">${item.경조사명 || '미기재'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">소속:</span>
-                            <span>${item.회사 || '-'}</span>
+                            <span class="detail-label">소속</span>
+                            <span class="detail-value">${item.회사 || '-'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">대상:</span>
-                            <span>${item.누구 || '-'}</span>
+                            <span class="detail-label">대상</span>
+                            <span class="detail-value">${item.누구 || '-'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">방법/참석:</span>
-                            <span>${item.입출금방법 || '-'} (${item.참석 || 'X'})</span>
+                            <span class="detail-label">방법</span>
+                            <span class="detail-value">${item.입출금방법 || '-'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">답례:</span>
-                            <span>${returnDisplay}</span>
+                            <span class="detail-label">참석</span>
+                            <span class="detail-value">${attendStatus}</span>
                         </div>
-                    </div>
-                    <div class="card-amount-group">
-                        <div class="card-amount-label">금액</div>
-                        <div class="card-amount">${amount}원</div>
+                        <div class="detail-item">
+                            <span class="detail-label">답례</span>
+                            <span class="detail-value ${returnBadgeClass}">${returnDisplay}</span>
+                        </div>
                     </div>
                     ${item.Remark ? `
                         <div class="card-remark">
