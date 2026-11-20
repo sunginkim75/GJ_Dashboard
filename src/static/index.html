@@ -178,7 +178,19 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="form-company">소속 / 회사</label>
-                                <input type="text" id="form-company" name="회사" placeholder="예: 하이닉스, 키파운드리, 친가, 외가 등">
+                                <input type="text" id="form-company" name="회사" list="company-options" placeholder="소속/회사 선택 또는 직접 입력">
+                                <datalist id="company-options">
+                                    <option value="키파운드리"></option>
+                                    <option value="외가"></option>
+                                    <option value="하이닉스"></option>
+                                    <option value="친가"></option>
+                                    <option value="동부"></option>
+                                    <option value="지인"></option>
+                                    <option value="영숙친구"></option>
+                                    <option value="케이씨텍"></option>
+                                    <option value="가족"></option>
+                                    <option value="HJS"></option>
+                                </datalist>
                             </div>
 
                             <div class="form-group">
@@ -304,7 +316,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="edit-company">소속 / 회사</label>
-                            <input type="text" id="edit-company">
+                            <input type="text" id="edit-company" list="company-options" placeholder="소속/회사 선택 또는 직접 입력">
                         </div>
                         <div class="form-group">
                             <label for="edit-who">대상 (누구) <span class="required">*</span></label>

@@ -1,5 +1,5 @@
 {
-  "version": "0.7.1",
+  "version": "0.7.2",
   "history": [
     {
       "version": "0.1.0",
@@ -110,6 +110,11 @@
       "version": "0.7.1",
       "date": "2026-11-20",
       "description": "경조사명 선택 목록에서 '본인결혼'을 '결혼'으로 변경하고 3번째 항목으로 '용돈' 추가"
+    },
+    {
+      "version": "0.7.2",
+      "date": "2026-11-20",
+      "description": "소속/회사 입력창(등록 및 수정 모달)에 드롭다운 선택 목록(datalist#company-options) 추가"
     }
   ]
 }

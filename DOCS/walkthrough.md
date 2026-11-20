@@ -55,6 +55,9 @@
   - `src/static/index.html`: `<datalist id="event-options">`에서 `'본인결혼'`을 `'결혼'`으로 수정하고 3번째 순서에 `'용돈'` 항목 추가 (`['아들결혼', '딸결혼', '용돈', '결혼', '부친상', '모친상', '빙부상', '빙모상', '돌잔치', '칠순잔치']`)
   - `Debug/006.debug_test.py`: 경조사명 목록 변경 및 순서 검증 단위 테스트 작성 및 통과
   - `config/version.json`: 버전 `0.7.1` 업데이트 완료
+  - **소속/회사 드롭다운 목록 추가 (v0.7.2)**:
+    - `src/static/index.html`: 등록 폼(`#form-company`) 및 수정 모달(`#edit-company`)에 `<datalist id="company-options">` (`키파운드리`, `외가`, `하이닉스`, `친가`, `동부`, `지인`, `영숙친구`, `케이씨텍`, `가족`, `HJS`) 연결 완료
+    - `Debug/007.debug_test.py` 단위 테스트 검증 통과 및 `config/version.json` `0.7.2` 업데이트 완료
 
 
 
